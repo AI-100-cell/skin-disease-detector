@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkinScan AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+    header { width: 100%; padding: 20px 40px; background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
+    header .logo { width: 36px; height: 36px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    header h1 { font-size: 1.4rem; font-weight: 700; background: linear-gradient(90deg, #a78bfa, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    header p { margin-left: auto; font-size: 0.78rem; color: #64748b; }
+    .container { width: 100%; max-width: 860px; padding: 40px 20px; display: flex; flex-direction: column; gap: 28px; }
+    .hero { text-align: center; }
+    .hero h2 { font-size: 2rem; font-weight: 800; margin-bottom: 10px; background: linear-gradient(90deg, #e2e8f0, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { color: #64748b; font-size: 0.95rem; }
+    .upload-card { background: rgba(255,255,255,0.04); border: 2px dashed rgba(255,255,255,0.12); border-radius: 20px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+    .upload-card:hover, .upload-card.drag-over { border-color: #6366f1; background: rgba(99,102,241,0.06); }
+    .upload-card input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .upload-icon { font-size: 3rem; margin-bottom: 12px; }
+    .upload-card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+    .upload-card p { color: #64748b; font-size: 0.85rem; }
+    .or-divider { display: flex; align-items: center; gap: 16px; color: #475569; font-size: 0.85rem; }
+    .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.08); }
+    .camera-btn { width: 100%; padding: 14px; background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; color: #a78bfa; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .camera-btn:hover { background: rgba(99,102,241,0.2); }
+    #preview-section { display: none; }
+    #preview-section.visible { display: block; }
+    .preview-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden; }
+    .preview-header { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; }
+    .preview-header span { font-weight: 600; font-size: 0.9rem; color: #94a3b8; }
+    .clear-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.85rem; padding: 4px 10px; border-radius: 6px; }
+    #preview-img { width: 100%; max-height: 340px; object-fit: contain; background: #0a0f1e; display: block; }
+    #camera-view { display: none; width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden; }
+    #camera-view.visible { display: block; }
+    #video { width: 100%; max-height: 340px; object-fit: cover; display: block; }
+    .camera-controls { padding: 16px; display: flex; gap: 12px; }
+    .snap-btn { flex: 1; padding: 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+    .cancel-cam-btn { padding: 12px 20px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #94a3b8; font-size: 0.9rem; cursor: pointer; }
+    #analyze-btn { display: none; width: 100%; padding: 16px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; border-radius: 14px; color: white; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s, transform 0.1s; }
+    #analyze-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    #analyze-btn.visible { display: block; }
+    #analyze-btn.loading { opacity: 0.7; pointer-events: none; }
+    #results-section { display: none; }
+    #results-section.visible { display: block; }
+    .results-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden; }
+    .results-header { padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; }
+    .results-header h3 { font-size: 1rem; font-weight: 700; }
+    .badge { padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+    .badge.ai { background: rgba(99,102,241,0.2); color: #a78bfa; }
+    .prediction-list { padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; }
+    .prediction-item { display: flex; flex-direction: column; gap: 8px; }
+    .prediction-top { display: flex; justify-content: space-between; align-items: center; }
+    .condition-name { font-weight: 600; font-size: 0.95rem; }
+    .condition-name.rank-1 { color: #e2e8f0; font-size: 1.05rem; }
+    .condition-name.rank-2 { color: #94a3b8; }
+    .condition-name.rank-3 { color: #64748b; }
+    .confidence-pct { font-weight: 700; font-size: 0.95rem; }
+    .rank-1 .confidence-pct { color: #6366f1; }
+    .rank-2 .confidence-pct { color: #8b5cf6; }
+    .rank-3 .confidence-pct { color: #a78bfa; }
+    .bar-track { width: 100%; height: 8px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #6366f1, #8b5cf6); transition: width 0.8s cubic-bezier(0.23,1,0.32,1); width: 0%; }
+    .rank-2 .bar-fill { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .rank-3 .bar-fill { background: linear-gradient(90deg, #a78bfa, #c4b5fd); }
+    .rank-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 0.72rem; font-weight: 800; margin-right: 8px; }
+    .rank-1 .rank-badge { background: #6366f1; color: white; }
+    .rank-2 .rank-badge { background: rgba(139,92,246,0.3); color: #a78bfa; }
+    .rank-3 .rank-badge { background: rgba(167,139,250,0.15); color: #a78bfa; }
+    .disclaimer { margin: 0 24px 20px; padding: 12px 16px; background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.18); border-radius: 10px; font-size: 0.78rem; color: #ca8a04; line-height: 1.5; }
+    #error-box { display: none; padding: 16px 20px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 12px; color: #f87171; font-size: 0.9rem; }
+    #error-box.visible { display: block; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    canvas { display: none; }
+    footer { margin-top: auto; padding: 24px; text-align: center; color: #334155; font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">🔬</div>
+  <h1>SkinScan AI</h1>
+  <p>EfficientNet-B0 · HAM10000 · 76.6% val accuracy</p>
+</header>
+<div class="container">
+  <div class="hero">
+    <h2>AI-Powered Skin Analysis</h2>
+    <p>Upload or capture a dermatoscopic image to identify potential skin conditions.</p>
+  </div>
+  <div class="upload-card" id="drop-zone">
+    <input type="file" id="file-input" accept="image/*" />
+    <div class="upload-icon">📤</div>
+    <h3>Drop an image here</h3>
+    <p>or click to browse files · JPG, PNG, WEBP</p>
+  </div>
+  <div class="or-divider">or use camera</div>
+  <button class="camera-btn" id="open-camera-btn">📷 Open Camera</button>
+  <div id="camera-view">
+    <video id="video" autoplay playsinline></video>
+    <div class="camera-controls">
+      <button class="snap-btn" id="snap-btn">📸 Capture</button>
+      <button class="cancel-cam-btn" id="cancel-cam-btn">Cancel</button>
+    </div>
+  </div>
+  <canvas id="canvas"></canvas>
+  <div id="preview-section">
+    <div class="preview-card">
+      <div class="preview-header">
+        <span>📎 Selected Image</span>
+        <button class="clear-btn" id="clear-btn">✕ Clear</button>
+      </div>
+      <img id="preview-img" alt="Preview" />
+    </div>
+  </div>
+  <button id="analyze-btn">Analyze Skin Condition</button>
+  <div id="error-box"></div>
+  <div id="results-section">
+    <div class="results-card">
+      <div class="results-header">
+        <h3>Analysis Results</h3>
+        <span class="badge ai">AI · Top 3</span>
+      </div>
+      <div class="prediction-list" id="prediction-list"></div>
+      <div class="disclaimer">⚠️ This tool is for educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified dermatologist.</div>
+    </div>
+  </div>
+</div>
+<footer>SkinScan AI · Built with EfficientNet-B0 + FastAPI · Day 2 Project</footer>
+<script>
+  const API_URL = 'http://127.0.0.1:8000/predict';
+  const fileInput = document.getElementById('file-input');
+  const dropZone = document.getElementById('drop-zone');
+  const previewSection = document.getElementById('preview-section');
+  const previewImg = document.getElementById('preview-img');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const resultsSection = document.getElementById('results-section');
+  const predictionList = document.getElementById('prediction-list');
+  const errorBox = document.getElementById('error-box');
+  const clearBtn = document.getElementById('clear-btn');
+  const openCameraBtn = document.getElementById('open-camera-btn');
+  const cameraView = document.getElementById('camera-view');
+  const video = document.getElementById('video');
+  const snapBtn = document.getElementById('snap-btn');
+  const cancelCamBtn = document.getElementById('cancel-cam-btn');
+  const canvas = document.getElementById('canvas');
+  let currentFile = null, stream = null;
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadFile(file);
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+  function loadFile(file) {
+    currentFile = file;
+    previewImg.src = URL.createObjectURL(file);
+    previewSection.classList.add('visible');
+    analyzeBtn.classList.add('visible');
+    analyzeBtn.textContent = 'Analyze Skin Condition';
+    resultsSection.classList.remove('visible');
+    errorBox.classList.remove('visible');
+  }
+
+  clearBtn.addEventListener('click', () => {
+    currentFile = null;
+    previewSection.classList.remove('visible');
+    analyzeBtn.classList.remove('visible');
+    resultsSection.classList.remove('visible');
+    errorBox.classList.remove('visible');
+    fileInput.value = '';
+  });
+
+  openCameraBtn.addEventListener('click', async () => {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      video.srcObject = stream;
+      cameraView.classList.add('visible');
+      openCameraBtn.style.display = 'none';
+    } catch (e) { showError('Camera access denied. Please upload an image instead.'); }
+  });
+
+  snapBtn.addEventListener('click', () => {
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.toBlob(blob => {
+      stopCamera();
+      loadFile(new File([blob], 'capture.jpg', { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.92);
+  });
+
+  cancelCamBtn.addEventListener('click', stopCamera);
+  function stopCamera() {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    cameraView.classList.remove('visible');
+    openCameraBtn.style.display = 'flex';
+  }
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    analyzeBtn.classList.add('loading');
+    analyzeBtn.innerHTML = '<span class="spinner"></span>Analyzing...';
+    resultsSection.classList.remove('visible');
+    errorBox.classList.remove('visible');
+    const formData = new FormData();
+    formData.append('file', currentFile);
+    try {
+      const res = await fetch(API_URL, { method: 'POST', body: formData });
+      if (!res.ok) throw new Error('Server error ' + res.status);
+      const data = await res.json();
+      renderResults(data.predictions);
+    } catch (e) {
+      showError(e.message.includes('fetch')
+        ? 'Cannot connect to API. Make sure the server is running: uvicorn api.main:app --reload'
+        : e.message);
+    } finally {
+      analyzeBtn.classList.remove('loading');
+      analyzeBtn.textContent = 'Analyze Skin Condition';
+    }
+  });
+
+  function renderResults(predictions) {
+    predictionList.innerHTML = '';
+    predictions.forEach((p, i) => {
+      const rank = i + 1;
+      const item = document.createElement('div');
+      item.className = 'prediction-item rank-' + rank;
+      item.innerHTML = `
+        <div class="prediction-top">
+          <div class="condition-name rank-${rank}"><span class="rank-badge">${rank}</span>${p.condition}</div>
+          <div class="confidence-pct">${p.confidence.toFixed(1)}%</div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" data-width="${p.confidence}"></div></div>`;
+      predictionList.appendChild(item);
+    });
+    resultsSection.classList.add('visible');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.width + '%'; });
+    }));
+  }
+
+  function showError(msg) { errorBox.textContent = '⚠️ ' + msg; errorBox.classList.add('visible'); }
+</script>
+</body>
+</html>
